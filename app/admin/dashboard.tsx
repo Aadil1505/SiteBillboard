@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trash2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { deleteSubdomainAction } from '@/app/actions';
+import { deleteSubdomainAction } from '@/lib/actions';
 import { rootDomain, protocol } from '@/lib/utils';
 
 type Tenant = {
