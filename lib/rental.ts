@@ -27,7 +27,12 @@ export async function getBookedDates(subdomain: string): Promise<Date[]> {
     .innerJoin(rentalDate, eq(rental.id, rentalDate.rentalId))
     .where(eq(rental.subdomain, subdomain));
 
-  return result.map(r => new Date(r.date));
+  // Fix: Create dates in local timezone instead of UTC
+  return result.map(r => {
+    const [year, month, day] = r.date.split('-').map(Number);
+    // Create date in local timezone (month is 0-indexed in Date constructor)
+    return new Date(year, month - 1, day);
+  });
 }
 
 /**
@@ -38,7 +43,13 @@ export async function areDatesAvailable(
   dates: Date[]
 ): Promise<boolean> {
   // Convert dates to YYYY-MM-DD format for comparison
-  const dateStrings = dates.map(d => d.toISOString().split('T')[0]);
+  const dateStrings = dates.map(d => {
+    // Ensure we get the local date components, not UTC
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  });
   
   // Check if any of these dates are already booked
   const bookedDates = await db
@@ -79,11 +90,18 @@ export async function createRental(
   });
 
   // Create individual date records for each selected date
-  const dateRecords = dates.map(date => ({
-    id: crypto.randomUUID(),
-    rentalId,
-    date: date.toISOString().split('T')[0], // Convert to YYYY-MM-DD format
-  }));
+  const dateRecords = dates.map(date => {
+    // Fix: Use local date components instead of toISOString()
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    
+    return {
+      id: crypto.randomUUID(),
+      rentalId,
+      date: `${year}-${month}-${day}`, // YYYY-MM-DD format using local components
+    };
+  });
 
   if (dateRecords.length > 0) {
     await db.insert(rentalDate).values(dateRecords);
@@ -121,7 +139,9 @@ export async function getUserRentals(userId: string) {
     }
     
     if (row.date) {
-      rentalsMap.get(row.rentalId).dates.push(new Date(row.date));
+      // Fix: Create date in local timezone
+      const [year, month, day] = row.date.split('-').map(Number);
+      rentalsMap.get(row.rentalId).dates.push(new Date(year, month - 1, day));
     }
   });
 
@@ -154,7 +174,11 @@ export async function getSubdomainRental(subdomain: string) {
     emoji: first.emoji,
     userId: first.userId,
     createdAt: first.createdAt,
-    dates: result.filter(r => r.date).map(r => new Date(r.date))
+    // Fix: Create dates in local timezone
+    dates: result.filter(r => r.date).map(r => {
+      const [year, month, day] = r.date.split('-').map(Number);
+      return new Date(year, month - 1, day);
+    })
   };
 }
 
