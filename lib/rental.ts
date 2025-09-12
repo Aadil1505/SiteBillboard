@@ -1,6 +1,6 @@
 import { db } from '@/db/drizzle';
 import { rental, rentalDate } from '@/db/schema';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray, sql } from 'drizzle-orm';
 
 /**
  * Check if subdomain is available (not already rented by someone else)
@@ -192,3 +192,86 @@ export async function deleteRental(rentalId: string): Promise<void> {
   // Then delete the rental
   await db.delete(rental).where(eq(rental.id, rentalId));
 }
+
+// Add this to lib/rental.ts
+
+/**
+ * Update the content for a rental
+ */
+export async function updateRentalContent(
+  rentalId: string,
+  userId: string,
+  content: string
+): Promise<void> {
+  // Verify the rental belongs to the user
+  const rentalOwnership = await db
+    .select({ userId: rental.userId })
+    .from(rental)
+    .where(eq(rental.id, rentalId))
+    .limit(1);
+
+  if (rentalOwnership.length === 0 || rentalOwnership[0].userId !== userId) {
+    throw new Error('Rental not found or access denied');
+  }
+
+  // Update the content
+  await db
+    .update(rental)
+    .set({ content })
+    .where(eq(rental.id, rentalId));
+}
+
+/**
+ * Get user's active rentals (rentals with future dates)
+ */
+export async function getUserActiveRentals(userId: string) {
+  const today = new Date();
+  const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+  const result = await db
+    .select({
+      rentalId: rental.id,
+      subdomain: rental.subdomain,
+      emoji: rental.emoji,
+      content: rental.content,
+      createdAt: rental.createdAt,
+      date: rentalDate.date,
+    })
+    .from(rental)
+    .innerJoin(rentalDate, eq(rental.id, rentalDate.rentalId))
+    .where(
+      and(
+        eq(rental.userId, userId),
+        // Only get rentals with dates today or in the future
+        // Using >= for comparison with date strings in YYYY-MM-DD format
+        sql`${rentalDate.date} >= ${todayString}`
+      )
+    );
+
+  // Group dates by rental
+  const rentalsMap = new Map();
+  
+  result.forEach(row => {
+    if (!rentalsMap.has(row.rentalId)) {
+      rentalsMap.set(row.rentalId, {
+        id: row.rentalId,
+        subdomain: row.subdomain,
+        emoji: row.emoji,
+        content: row.content,
+        createdAt: row.createdAt,
+        dates: []
+      });
+    }
+    
+    if (row.date) {
+      // Create date in local timezone
+      const [year, month, day] = row.date.split('-').map(Number);
+      rentalsMap.get(row.rentalId).dates.push(new Date(year, month - 1, day));
+    }
+  });
+
+  return Array.from(rentalsMap.values());
+}
+
+// Don't forget to add this import at the top of the file:
+// import { sql } from 'drizzle-orm';

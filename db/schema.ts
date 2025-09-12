@@ -68,6 +68,7 @@ export const rental = pgTable("rental", {
   userId: text("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
+  content: text("content").default("").notNull(), // New field for storing HTML/text content
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

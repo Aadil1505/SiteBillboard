@@ -11,6 +11,7 @@ import {
   IconFolder,
   IconHelp,
   IconListDetails,
+  IconPencil,
   IconReport,
   IconSearch,
   IconSettings,
@@ -40,29 +41,19 @@ const data = {
   },
   navMain: [
     {
-      title: "Dashboard",
-      url: "#",
-      icon: IconDashboard,
+      title: "Editor",
+      url: "/dashboard/editor",
+      icon: IconPencil,
     },
     {
-      title: "Lifecycle",
-      url: "#",
+      title: "Rentals",
+      url: "/dashboard/rentals",
       icon: IconListDetails,
     },
     {
       title: "Analytics",
       url: "#",
       icon: IconChartBar,
-    },
-    {
-      title: "Projects",
-      url: "#",
-      icon: IconFolder,
-    },
-    {
-      title: "Team",
-      url: "#",
-      icon: IconUsers,
     },
   ],
   navClouds: [
@@ -159,7 +150,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <a href="#">
+              <a href="/">
                 <BrickWallIcon className="!size-5" />
                 <span className="text-base font-semibold">SiteBillboard</span>
               </a>

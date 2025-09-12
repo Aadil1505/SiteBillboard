@@ -8,7 +8,8 @@ import {
   isSubdomainAvailable, 
   getBookedDates,
   areDatesAvailable,
-  createRental
+  createRental,
+  updateRentalContent
 } from '@/lib/rental';
 
 // Check subdomain availability (for page 1)
@@ -106,3 +107,44 @@ export async function createSubdomainRentalAction(
 export async function getBookedDatesAction(subdomainName: string): Promise<Date[]> {
   return await getBookedDates(subdomainName);
 }
+
+// Add this to lib/new-actions.ts
+
+/**
+ * Update rental content
+ */
+export async function updateRentalContentAction(
+  prevState: any,
+  formData: FormData
+) {
+  try {
+    const session = await requireAuth();
+    const userId = session.user.id;
+
+    const rentalId = formData.get('rentalId') as string;
+    const content = formData.get('content') as string;
+
+    if (!rentalId || content === null) {
+      return { 
+        success: false, 
+        error: 'Rental ID and content are required' 
+      };
+    }
+
+    await updateRentalContent(rentalId, userId, content);
+
+    return {
+      success: true,
+      message: 'Content updated successfully'
+    };
+  } catch (error) {
+    console.error('Error updating rental content:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to update content'
+    };
+  }
+}
+
+// Don't forget to add the import at the top:
+// import { updateRentalContent } from '@/lib/rental';
