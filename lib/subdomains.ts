@@ -1,4 +1,7 @@
-import { redis } from '@/lib/redis';
+import { db } from '@/db/drizzle';
+import { rental, rentalDate } from '@/db/schema';
+import { eq } from 'drizzle-orm';
+import { getSubdomainRental } from './rental';
 
 export function isValidIcon(str: string) {
   if (str.length > 10) {
@@ -26,36 +29,42 @@ export function isValidIcon(str: string) {
   return str.length >= 1 && str.length <= 10;
 }
 
-type SubdomainData = {
-  emoji: string;
-  createdAt: number;
-};
-
 export async function getSubdomainData(subdomain: string) {
   const sanitizedSubdomain = subdomain.toLowerCase().replace(/[^a-z0-9-]/g, '');
-  const data = await redis.get<SubdomainData>(
-    `subdomain:${sanitizedSubdomain}`
-  );
-  return data;
+  return await getSubdomainRental(sanitizedSubdomain);
 }
 
 export async function getAllSubdomains() {
-  const keys = await redis.keys('subdomain:*');
+  const result = await db
+    .select({
+      rentalId: rental.id,
+      subdomain: rental.subdomain,
+      emoji: rental.emoji,
+      userId: rental.userId,
+      createdAt: rental.createdAt,
+      date: rentalDate.date,
+    })
+    .from(rental)
+    .leftJoin(rentalDate, eq(rental.id, rentalDate.rentalId));
 
-  if (!keys.length) {
-    return [];
-  }
-
-  const values = await redis.mget<SubdomainData[]>(...keys);
-
-  return keys.map((key, index) => {
-    const subdomain = key.replace('subdomain:', '');
-    const data = values[index];
-
-    return {
-      subdomain,
-      emoji: data?.emoji || '❓',
-      createdAt: data?.createdAt || Date.now()
-    };
+  // Group dates by rental
+  const rentalsMap = new Map();
+  
+  result.forEach(row => {
+    if (!rentalsMap.has(row.rentalId)) {
+      rentalsMap.set(row.rentalId, {
+        subdomain: row.subdomain,
+        emoji: row.emoji,
+        createdAt: row.createdAt.getTime(),
+        ownerId: row.userId,
+        dates: []
+      });
+    }
+    
+    if (row.date) {
+      rentalsMap.get(row.rentalId).dates.push(row.date);
+    }
   });
+
+  return Array.from(rentalsMap.values());
 }

@@ -12,23 +12,24 @@ type Tenant = {
   subdomain: string;
   emoji: string;
   createdAt: number;
+  ownerId: string;
+  dates: string[]; // Array of date strings
 };
 
 type DeleteState = {
   error?: string;
-  success?: string;
+  success?: boolean;
+  message?: string;
 };
 
 function DashboardHeader() {
-  // TODO: You can add authentication here with your preferred auth provider
-
   return (
     <div className="flex justify-between items-center mb-8">
       <h1 className="text-3xl font-bold">Subdomain Management</h1>
       <div className="flex items-center gap-4">
         <Link
           href={`${protocol}://${rootDomain}`}
-          className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           {rootDomain}
         </Link>
@@ -50,7 +51,7 @@ function TenantGrid({
     return (
       <Card>
         <CardContent className="py-8 text-center">
-          <p className="text-gray-500">No subdomains have been created yet.</p>
+          <p className="text-muted-foreground">No subdomains have been created yet.</p>
         </CardContent>
       </Card>
     );
@@ -74,7 +75,7 @@ function TenantGrid({
                   size="icon"
                   type="submit"
                   disabled={isPending}
-                  className="text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                  className="text-muted-foreground hover:text-foreground hover:bg-muted"
                 >
                   {isPending ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
@@ -86,18 +87,28 @@ function TenantGrid({
             </div>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-4">
               <div className="text-4xl">{tenant.emoji}</div>
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-muted-foreground">
                 Created: {new Date(tenant.createdAt).toLocaleDateString()}
               </div>
             </div>
-            <div className="mt-4">
+            
+            {tenant.dates && tenant.dates.length > 0 && (
+              <div className="mb-4">
+                <p className="text-sm font-medium mb-2">Rented Dates:</p>
+                <div className="text-xs text-muted-foreground">
+                  {tenant.dates.length} days selected
+                </div>
+              </div>
+            )}
+            
+            <div>
               <a
                 href={`${protocol}://${tenant.subdomain}.${rootDomain}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-500 hover:underline text-sm"
+                className="text-primary hover:underline text-sm"
               >
                 Visit subdomain →
               </a>
@@ -121,14 +132,14 @@ export function AdminDashboard({ tenants }: { tenants: Tenant[] }) {
       <TenantGrid tenants={tenants} action={action} isPending={isPending} />
 
       {state.error && (
-        <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded shadow-md">
+        <div className="fixed bottom-4 right-4 bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded shadow-md">
           {state.error}
         </div>
       )}
 
-      {state.success && (
-        <div className="fixed bottom-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded shadow-md">
-          {state.success}
+      {state.success && state.message && (
+        <div className="fixed bottom-4 right-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded shadow-md">
+          {state.message}
         </div>
       )}
     </div>

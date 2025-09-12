@@ -46,7 +46,7 @@ export function CalendarRentalForm({
         action(formData);
     };
 
-    const totalCost = selectedDates.length * 10; // Assuming $10 per day
+    const totalCost = selectedDates.length * 10; // $10 per day
 
     return (
         <div className="space-y-6">
@@ -66,12 +66,13 @@ export function CalendarRentalForm({
                 <div className="space-y-4">
                     <div>
                         <Label className="text-base font-medium">Available Dates</Label>
-                        <p className="text-sm text-gray-500 mt-1">
+                        <p className="text-sm text-muted-foreground mt-1">
                             Select the dates you want to rent. Crossed-out dates are already booked.
                         </p>
                     </div>
 
                     <Calendar
+                        required
                         mode="multiple"
                         selected={selectedDates}
                         onSelect={setSelectedDates}
@@ -93,7 +94,7 @@ export function CalendarRentalForm({
 
                 {selectedDates.length > 0 && (
                     <div className="space-y-4">
-                        <div className="p-4 bg-gray-50 rounded-lg">
+                        <div className="p-4 bg-muted rounded-lg">
                             <h3 className="font-medium mb-3">Rental Summary</h3>
                             <div className="space-y-2 text-sm">
                                 <div className="flex justify-between">
@@ -117,9 +118,9 @@ export function CalendarRentalForm({
                             </div>
                         </div>
 
-                        <div className="p-3 bg-blue-50 rounded-md">
+                        <div className="p-3 bg-primary/5 rounded-md">
                             <p className="text-sm font-medium mb-2">Selected dates:</p>
-                            <div className="text-xs text-gray-600 grid grid-cols-2 gap-1">
+                            <div className="text-xs text-muted-foreground grid grid-cols-2 gap-1">
                                 {selectedDates
                                     .sort((a, b) => a.getTime() - b.getTime())
                                     .map((date, index) => (
@@ -131,14 +132,8 @@ export function CalendarRentalForm({
                 )}
 
                 {state?.error && (
-                    <div className="text-sm text-red-500 p-3 bg-red-50 rounded-md">
+                    <div className="text-sm text-destructive p-3 bg-destructive/10 rounded-md">
                         {state.error}
-                    </div>
-                )}
-
-                {state?.success && (
-                    <div className="text-sm text-green-600 p-3 bg-green-50 rounded-md">
-                        Successfully rented {subdomain}.{rootDomain}!
                     </div>
                 )}
 

@@ -20,10 +20,11 @@ import {
   EmojiPickerSearch,
   EmojiPickerFooter
 } from '@/components/ui/emoji-picker';
-import { createSubdomainAction } from '@/lib/actions';
 import { rootDomain } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
+import { isValidIcon } from '@/lib/subdomains';
 
-type CreateState = {
+type FormState = {
   error?: string;
   success?: boolean;
   subdomain?: string;
@@ -45,7 +46,7 @@ function SubdomainInput({ defaultValue }: { defaultValue?: string }) {
             required
           />
         </div>
-        <span className="bg-gray-100 px-3 border border-l-0 border-input rounded-r-md text-gray-500 min-h-[36px] flex items-center">
+        <span className="bg-muted px-3 border border-l-0 border-input rounded-r-md text-muted-foreground min-h-[36px] flex items-center">
           .{rootDomain}
         </span>
       </div>
@@ -80,7 +81,7 @@ function IconPicker({
               {icon ? (
                 <span className="text-3xl">{icon}</span>
               ) : (
-                <span className="text-gray-400 text-sm font-normal">
+                <span className="text-muted-foreground text-sm font-normal">
                   No icon selected
                 </span>
               )}
@@ -116,7 +117,7 @@ function IconPicker({
             </Popover>
           </Card>
         </div>
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-muted-foreground">
           Select an emoji to represent your subdomain
         </p>
       </div>
@@ -126,9 +127,46 @@ function IconPicker({
 
 export function SubdomainForm() {
   const [icon, setIcon] = useState('');
+  const router = useRouter();
 
-  const [state, action, isPending] = useActionState<CreateState, FormData>(
-    createSubdomainAction,
+  const [state, action, isPending] = useActionState<FormState, FormData>(
+    async (prevState: FormState, formData: FormData) => {
+      const subdomainName = formData.get('subdomain') as string;
+      const iconValue = formData.get('icon') as string;
+
+      if (!subdomainName || !iconValue) {
+        return { success: false, error: 'Subdomain and icon are required' };
+      }
+
+      if (!isValidIcon(iconValue)) {
+        return {
+          subdomain: subdomainName,
+          icon: iconValue,
+          success: false,
+          error: 'Please enter a valid emoji (maximum 10 characters)'
+        };
+      }
+
+      const sanitized = subdomainName.toLowerCase().replace(/[^a-z0-9-]/g, '');
+
+      if (sanitized !== subdomainName.toLowerCase()) {
+        return {
+          subdomain: subdomainName,
+          icon: iconValue,
+          success: false,
+          error: 'Subdomain can only have lowercase letters, numbers, and hyphens. Please try again.'
+        };
+      }
+
+      // No availability check - just redirect to calendar
+      router.push(`/rent/calendar?subdomain=${encodeURIComponent(sanitized)}&icon=${encodeURIComponent(iconValue)}`);
+      
+      return {
+        subdomain: sanitized,
+        icon: iconValue,
+        success: true,
+      };
+    },
     {}
   );
 
@@ -139,11 +177,13 @@ export function SubdomainForm() {
       <IconPicker icon={icon} setIcon={setIcon} defaultValue={state?.icon} />
 
       {state?.error && (
-        <div className="text-sm text-red-500">{state.error}</div>
+        <div className="text-sm text-destructive p-3 bg-destructive/10 rounded-md">
+          {state.error}
+        </div>
       )}
 
       <Button type="submit" className="w-full" disabled={isPending || !icon}>
-        {isPending ? 'Creating...' : 'Create Subdomain'}
+        {isPending ? 'Processing...' : 'Continue to Date Selection'}
       </Button>
     </form>
   );

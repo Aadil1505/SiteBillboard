@@ -47,7 +47,7 @@ function SubdomainInput({ defaultValue }: { defaultValue?: string }) {
             required
           />
         </div>
-        <span className="bg-gray-100 px-3 border border-l-0 border-input rounded-r-md text-gray-500 min-h-[36px] flex items-center">
+        <span className="bg-muted px-3 border border-l-0 border-input rounded-r-md text-muted-foreground min-h-[36px] flex items-center">
           .{rootDomain}
         </span>
       </div>
@@ -82,7 +82,7 @@ function IconPicker({
               {icon ? (
                 <span className="text-3xl">{icon}</span>
               ) : (
-                <span className="text-gray-400 text-sm font-normal">
+                <span className="text-muted-foreground text-sm font-normal">
                   No icon selected
                 </span>
               )}
@@ -118,7 +118,7 @@ function IconPicker({
             </Popover>
           </Card>
         </div>
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-muted-foreground">
           Select an emoji to represent your subdomain
         </p>
       </div>
@@ -139,7 +139,7 @@ export default function SubdomainSelectionForm() {
         const subdomain = formData.get('subdomain') as string;
         const icon = formData.get('icon') as string;
         
-        router.push(`/rent/calendar?subdomain=${encodeURIComponent(subdomain)}&icon=${encodeURIComponent(icon)}`);
+        router.push(`/dashboard/rent/calendar?subdomain=${encodeURIComponent(subdomain)}&icon=${encodeURIComponent(icon)}`);
         return result;
       }
       
@@ -149,35 +149,37 @@ export default function SubdomainSelectionForm() {
   );
 
   return (
-    <div className="max-w-md mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold mb-2">Choose Your Subdomain</h1>
-        <p className="text-gray-600">
-          Select a subdomain name and icon for your rental
-        </p>
+    <div className="min-h-screen bg-background p-4">
+      <div className="max-w-md mx-auto space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold mb-2">Choose Your Subdomain</h1>
+          <p className="text-muted-foreground">
+            Select a subdomain name and icon for your rental
+          </p>
+        </div>
+
+        <form action={action} className="space-y-4">
+          <SubdomainInput defaultValue={state?.subdomain} />
+
+          <IconPicker icon={icon} setIcon={setIcon} defaultValue={state?.icon} />
+
+          {state?.error && (
+            <div className="text-sm text-destructive p-3 bg-destructive/10 rounded-md">
+              {state.error}
+            </div>
+          )}
+
+          {state?.available && (
+            <div className="text-sm text-green-600 p-3 bg-green-50 rounded-md">
+              Great! "{state.subdomain}" is available. Redirecting to date selection...
+            </div>
+          )}
+
+          <Button type="submit" className="w-full" disabled={isPending || !icon}>
+            {isPending ? 'Checking availability...' : 'Check Availability & Continue'}
+          </Button>
+        </form>
       </div>
-
-      <form action={action} className="space-y-4">
-        <SubdomainInput defaultValue={state?.subdomain} />
-
-        <IconPicker icon={icon} setIcon={setIcon} defaultValue={state?.icon} />
-
-        {state?.error && (
-          <div className="text-sm text-red-500 p-3 bg-red-50 rounded-md">
-            {state.error}
-          </div>
-        )}
-
-        {state?.available && (
-          <div className="text-sm text-green-600 p-3 bg-green-50 rounded-md">
-            Great! "{state.subdomain}" is available. Redirecting to date selection...
-          </div>
-        )}
-
-        <Button type="submit" className="w-full" disabled={isPending || !icon}>
-          {isPending ? 'Checking availability...' : 'Check Availability & Continue'}
-        </Button>
-      </form>
     </div>
   );
 }
